@@ -1,8 +1,37 @@
 import numpy as np
 from app.models.model_loader import model
 
+# 🔹 Explanation function
+def generate_explanation(data):
+    reasons = []
+
+    if data.nitrogen > 80:
+        reasons.append("high nitrogen")
+
+    if data.phosphorus < 50:
+        reasons.append("low phosphorus")
+
+    if data.potassium > 40:
+        reasons.append("adequate potassium")
+
+    if data.temperature > 25:
+        reasons.append("warm temperature")
+
+    if data.humidity > 60:
+        reasons.append("high humidity")
+
+    if data.rainfall > 100:
+        reasons.append("good rainfall")
+
+    if not reasons:
+        return "Balanced environmental conditions"
+
+    return ", ".join(reasons)
+
+
+# 🔹 Main prediction service
 def predict_crop_service(data):
-    features = np.array([[
+    features = np.array([[ 
         data.nitrogen,
         data.phosphorus,
         data.potassium,
@@ -12,8 +41,18 @@ def predict_crop_service(data):
         data.rainfall
     ]])
 
+    # ✅ Prediction
     prediction = model.predict(features)[0]
 
+    # ✅ Confidence score
+    probabilities = model.predict_proba(features)[0]
+    confidence = float(np.max(probabilities))
+
+    # ✅ Explanation
+    explanation = generate_explanation(data)
+
     return {
-        "recommended_crop": prediction
+        "recommended_crop": prediction,
+        "confidence": round(confidence, 2),
+        "explanation": f"{explanation} conditions favor {prediction} cultivation"
     }
