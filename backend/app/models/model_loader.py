@@ -1,4 +1,7 @@
-import pickle
+import os
+import joblib
 
-with open("crop_model.pkl", "rb") as f:
-    model = pickle.load(f)
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+model_path = os.path.join(BASE_DIR, "app", "crop_model.pkl")
+
+model = joblib.load(model_path)
