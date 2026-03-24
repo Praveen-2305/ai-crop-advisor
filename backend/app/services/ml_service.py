@@ -2,25 +2,25 @@ import numpy as np
 from app.models.model_loader import model
 
 # 🔹 Explanation function
-def generate_explanation(data):
+def generate_explanation_dict(data):
     reasons = []
 
-    if data.nitrogen > 80:
+    if data["nitrogen"] > 80:
         reasons.append("high nitrogen")
 
-    if data.phosphorus < 50:
+    if data["phosphorus"] < 50:
         reasons.append("low phosphorus")
 
-    if data.potassium > 40:
+    if data["potassium"] > 40:
         reasons.append("adequate potassium")
 
-    if data.temperature > 25:
+    if data["temperature"] > 25:
         reasons.append("warm temperature")
 
-    if data.humidity > 60:
+    if data["humidity"] > 60:
         reasons.append("high humidity")
 
-    if data.rainfall > 100:
+    if data["rainfall"] > 100:
         reasons.append("good rainfall")
 
     if not reasons:
@@ -29,27 +29,23 @@ def generate_explanation(data):
     return ", ".join(reasons)
 
 
-# 🔹 Main prediction service
 def predict_crop_service(data):
     features = np.array([[ 
-        data.nitrogen,
-        data.phosphorus,
-        data.potassium,
-        data.temperature,
-        data.humidity,
-        data.ph,
-        data.rainfall
+        data["nitrogen"],
+        data["phosphorus"],
+        data["potassium"],
+        data["temperature"],
+        data["humidity"],
+        data["ph"],
+        data["rainfall"]
     ]])
 
-    # ✅ Prediction
     prediction = model.predict(features)[0]
 
-    # ✅ Confidence score
     probabilities = model.predict_proba(features)[0]
     confidence = float(np.max(probabilities))
 
-    # ✅ Explanation
-    explanation = generate_explanation(data)
+    explanation = generate_explanation_dict(data)
 
     return {
         "recommended_crop": prediction,

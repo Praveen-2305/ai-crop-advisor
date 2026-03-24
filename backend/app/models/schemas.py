@@ -1,10 +1,8 @@
 from pydantic import BaseModel
 
-class CropInput(BaseModel):
-    nitrogen: float
-    phosphorus: float
-    potassium: float
-    temperature: float
-    humidity: float
+class CropRequest(BaseModel):
+    city: str
+    N: float
+    P: float
+    K: float
     ph: float
-    rainfall: float
