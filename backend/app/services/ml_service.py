@@ -1,34 +1,65 @@
 import numpy as np
 from app.models.model_loader import model
 
-# 🔹 Explanation function
-def generate_explanation_dict(data):
-    reasons = []
 
+# 🔹 Explainable AI function (NEW)
+def generate_explanation(data):
+    positive = []
+    negative = []
+
+    # Nitrogen
     if data["nitrogen"] > 80:
-        reasons.append("high nitrogen")
+        positive.append("high nitrogen")
+    else:
+        negative.append("low nitrogen")
 
-    if data["phosphorus"] < 50:
-        reasons.append("low phosphorus")
+    # Phosphorus
+    if data["phosphorus"] >= 50:
+        positive.append("sufficient phosphorus")
+    else:
+        negative.append("low phosphorus")
 
+    # Potassium
     if data["potassium"] > 40:
-        reasons.append("adequate potassium")
+        positive.append("adequate potassium")
+    else:
+        negative.append("low potassium")
 
+    # Temperature
     if data["temperature"] > 25:
-        reasons.append("warm temperature")
+        positive.append("warm temperature")
+    else:
+        negative.append("low temperature")
 
+    # Humidity
     if data["humidity"] > 60:
-        reasons.append("high humidity")
+        positive.append("high humidity")
+    else:
+        negative.append("low humidity")
 
+    # Rainfall
     if data["rainfall"] > 100:
-        reasons.append("good rainfall")
+        positive.append("good rainfall")
+    else:
+        negative.append("low rainfall")
 
-    if not reasons:
-        return "Balanced environmental conditions"
+    return {
+        "positive": positive,
+        "negative": negative
+    }
 
-    return ", ".join(reasons)
+
+# 🔹 Decision Score function (NEW)
+def get_decision_score(confidence):
+    if confidence > 0.75:
+        return "Highly Recommended"
+    elif confidence > 0.5:
+        return "Recommended"
+    else:
+        return "Try with caution"
 
 
+# 🔹 Main Prediction Service (UPGRADED)
 def predict_crop_service(data):
     features = np.array([[ 
         data["nitrogen"],
@@ -40,14 +71,15 @@ def predict_crop_service(data):
         data["rainfall"]
     ]])
 
-    # 🔹 Get probabilities for all crops
+    # 🔹 Get probabilities
     probabilities = model.predict_proba(features)[0]
     classes = model.classes_
 
-    # 🔹 Get top 3 crops
+    # 🔹 Top 3 crops
     top_indices = np.argsort(probabilities)[-3:][::-1]
 
-    explanation = generate_explanation_dict(data)
+    # 🔹 Explanation
+    explanation = generate_explanation(data)
 
     top_crops = []
     for idx in top_indices:
@@ -57,7 +89,8 @@ def predict_crop_service(data):
         top_crops.append({
             "crop": crop_name,
             "confidence": round(confidence, 2),
-            "explanation": f"{explanation} conditions favor {crop_name} cultivation"
+            "score": get_decision_score(confidence),
+            "factors": explanation
         })
 
     return {
