@@ -40,15 +40,26 @@ def predict_crop_service(data):
         data["rainfall"]
     ]])
 
-    prediction = model.predict(features)[0]
-
+    # 🔹 Get probabilities for all crops
     probabilities = model.predict_proba(features)[0]
-    confidence = float(np.max(probabilities))
+    classes = model.classes_
+
+    # 🔹 Get top 3 crops
+    top_indices = np.argsort(probabilities)[-3:][::-1]
 
     explanation = generate_explanation_dict(data)
 
+    top_crops = []
+    for idx in top_indices:
+        crop_name = classes[idx]
+        confidence = float(probabilities[idx])
+
+        top_crops.append({
+            "crop": crop_name,
+            "confidence": round(confidence, 2),
+            "explanation": f"{explanation} conditions favor {crop_name} cultivation"
+        })
+
     return {
-        "recommended_crop": prediction,
-        "confidence": round(confidence, 2),
-        "explanation": f"{explanation} conditions favor {prediction} cultivation"
+        "recommended_crops": top_crops
     }
