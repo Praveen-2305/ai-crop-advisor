@@ -1,7 +1,17 @@
 from app.services.weather_service import get_weather
 
 def build_features(data):
-    weather = get_weather(data.city)
+    try:
+        weather = get_weather(data.city)
+    except Exception as e:
+        print("Weather API failed:", e)
+
+        # 🔹 fallback values
+        weather = {
+            "temperature": 25,
+            "humidity": 50,
+            "rainfall": 0
+        }
 
     return {
         "nitrogen": data.N,
