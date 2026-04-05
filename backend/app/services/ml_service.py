@@ -51,9 +51,9 @@ def generate_explanation(data):
 
 # 🔹 Decision Score function (NEW)
 def get_decision_score(confidence):
-    if confidence > 0.75:
+    if confidence > 0.6:
         return "Highly Recommended"
-    elif confidence > 0.5:
+    elif confidence > 0.4:
         return "Recommended"
     else:
         return "Try with caution"
@@ -73,10 +73,23 @@ def predict_crop_service(data):
 
     # 🔹 Get probabilities
     probabilities = model.predict_proba(features)[0]
+    
+    #Normalize probabilities
+    total =sum(probabilities)
+    probabilities = [p/total for p in probabilities]
+
+    # 🔥 Relative scaling (make best crop close to 1.0)
+    max_prob = max(probabilities)
+
+    adjusted_probs = [
+        (p / max_prob) if max_prob > 0 else 0
+        for p in probabilities
+    ]
+
     classes = model.classes_
 
     # 🔹 Top 3 crops
-    top_indices = np.argsort(probabilities)[-3:][::-1]
+    top_indices = np.argsort(adjusted_probs)[-3:][::-1]
 
     # 🔹 Explanation
     explanation = generate_explanation(data)
@@ -84,11 +97,11 @@ def predict_crop_service(data):
     top_crops = []
     for idx in top_indices:
         crop_name = classes[idx]
-        confidence = float(probabilities[idx])
+        confidence = round(float(adjusted_probs[idx]), 2)
 
         top_crops.append({
             "crop": crop_name,
-            "confidence": round(confidence, 2),
+            "confidence": confidence,
             "score": get_decision_score(confidence),
             "factors": explanation
         })
