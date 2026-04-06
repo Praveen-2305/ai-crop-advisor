@@ -15,7 +15,14 @@ def build_features(data):
     # Clamp weather values
     weather["temperature"] = max(15, min(weather["temperature"], 40))
     weather["humidity"] = max(30, min(weather["humidity"], 100))
+    # Clamp
     weather["rainfall"] = max(0, min(weather["rainfall"], 300))
+
+    # Scale
+    weather["rainfall"] = weather["rainfall"] * 10
+
+    # Final cap
+    weather["rainfall"] = min(weather["rainfall"], 300)
 
     # Derived features (for future use)
     moisture = weather["humidity"] + weather["rainfall"] / 2

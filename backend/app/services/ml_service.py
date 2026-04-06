@@ -3,51 +3,64 @@ from app.models.model_loader import model
 
 
 # 🔹 Explainable AI function (NEW)
-def generate_explanation(data):
+def generate_explanation(data, crop):
     positive = []
     negative = []
 
-    # Nitrogen
-    if data["nitrogen"] > 80:
-        positive.append("high nitrogen")
-    else:
-        negative.append("low nitrogen")
+    # 🌾 Rice logic
+    if crop == "rice":
+        if data["humidity"] > 65:
+            positive.append("high humidity suitable for rice")
+        else:
+            negative.append("low humidity for rice")
 
-    # Phosphorus
-    if data["phosphorus"] >= 50:
-        positive.append("sufficient phosphorus")
-    else:
-        negative.append("low phosphorus")
+        if data["rainfall"] > 150:
+            positive.append("sufficient rainfall for rice")
+        else:
+            negative.append("insufficient rainfall for rice")
 
-    # Potassium
-    if data["potassium"] > 40:
-        positive.append("adequate potassium")
-    else:
-        negative.append("low potassium")
+    # 🌽 Maize logic
+    elif crop == "maize":
+        if data["temperature"] > 28:
+            positive.append("warm temperature for maize")
+        else:
+            negative.append("temperature too low for maize")
 
-    # Temperature
-    if data["temperature"] > 25:
-        positive.append("warm temperature")
-    else:
-        negative.append("low temperature")
+        if data["rainfall"] < 100:
+            positive.append("low rainfall suits maize")
+        else:
+            negative.append("excess rainfall for maize")
 
-    # Humidity
-    if data["humidity"] > 60:
-        positive.append("high humidity")
-    else:
-        negative.append("low humidity")
+    # 🧵 Cotton logic
+    elif crop == "cotton":
+        if data["potassium"] > 150:
+            positive.append("high potassium supports cotton")
+        else:
+            negative.append("low potassium for cotton")
 
-    # Rainfall
-    if data["rainfall"] > 100:
-        positive.append("good rainfall")
+        if data["ph"] < 6:
+            positive.append("slightly acidic soil suits cotton")
+        else:
+            negative.append("pH not ideal for cotton")
+
+    # 🌾 Wheat logic
+    elif crop == "wheat":
+        if data["ph"] > 7:
+            positive.append("alkaline soil suits wheat")
+        else:
+            negative.append("pH too low for wheat")
+
+    # 🌿 Default fallback
     else:
-        negative.append("low rainfall")
+        if data["nitrogen"] > 50:
+            positive.append("moderate nitrogen level")
+        else:
+            negative.append("low nitrogen")
 
     return {
         "positive": positive,
         "negative": negative
     }
-
 
 # 🔹 Decision Score function (NEW)
 def get_decision_score(confidence):
@@ -91,13 +104,24 @@ def predict_crop_service(data):
     # 🔹 Top 3 crops
     top_indices = np.argsort(adjusted_probs)[-3:][::-1]
 
-    # 🔹 Explanation
-    explanation = generate_explanation(data)
-
     top_crops = []
+
     for idx in top_indices:
         crop_name = classes[idx]
-        confidence = round(float(adjusted_probs[idx]), 2)
+        base_confidence = float(adjusted_probs[idx])
+
+        explanation = generate_explanation(data, crop_name)
+
+        # Count factors
+        positive = len(explanation["positive"])
+        negative = len(explanation["negative"])
+
+        # Adjust confidence using explanation
+        confidence = base_confidence + (positive * 0.05) - (negative * 0.05)
+
+        # Clamp between 0 and 1
+        confidence = max(0, min(confidence, 1))
+        confidence = round(confidence, 2)
 
         top_crops.append({
             "crop": crop_name,
