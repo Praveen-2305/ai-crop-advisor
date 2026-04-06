@@ -1,126 +1,182 @@
+import os
+import joblib
 import numpy as np
+
 from app.models.model_loader import model
 
+# -----------------------------
+# LOAD LABEL ENCODER (ONCE)
+# -----------------------------
+BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../"))
+ENCODER_PATH = os.path.join(BASE_DIR, "models/encoders.pkl")
 
-# 🔹 Explainable AI function (NEW)
+encoders = joblib.load(ENCODER_PATH)
+label_encoder = encoders["label"]
+
+
+# -----------------------------
+# EXPLAINABLE AI LOGIC
+# -----------------------------
+# These rules exactly match CROP_RULES in generate_dataset.py
+CROP_RULES = {
+    "rice": {
+        "temp": (20, 35), "humidity": (70, 95), "rainfall": (150, 300), "ph": (5.0, 7.0),
+        "N": (80, 120), "P": (35, 60), "K": (35, 60),
+        "soil": ["clay", "loamy"], "season": ["kharif"]
+    },
+    "maize": {
+        "temp": (18, 32), "humidity": (50, 80), "rainfall": (50, 150), "ph": (5.5, 7.5),
+        "N": (60, 100), "P": (30, 55), "K": (30, 55),
+        "soil": ["loamy", "clay", "sandy"], "season": ["kharif", "zaid"]
+    },
+    "cotton": {
+        "temp": (20, 35), "humidity": (40, 70), "rainfall": (50, 100), "ph": (6.0, 8.0),
+        "N": (90, 130), "P": (40, 60), "K": (40, 60),
+        "soil": ["clay", "loamy"], "season": ["kharif"]
+    },
+    "wheat": {
+        "temp": (10, 25), "humidity": (40, 60), "rainfall": (30, 100), "ph": (6.0, 7.5),
+        "N": (70, 110), "P": (35, 50), "K": (35, 50),
+        "soil": ["loamy", "clay"], "season": ["rabi"]
+    }
+}
+
+def get_season_from_month(month):
+    if month in [6, 7, 8, 9]: return "kharif"
+    if month in [10, 11, 12, 1, 2]: return "rabi"
+    return "zaid"
+
 def generate_explanation(data, crop):
     positive = []
     negative = []
+    
+    rule = CROP_RULES.get(crop)
+    if not rule:
+        return {"positive": [], "negative": []}
 
-    # 🌾 Rice logic
-    if crop == "rice":
-        if data["humidity"] > 65:
-            positive.append("high humidity suitable for rice")
-        else:
-            negative.append("low humidity for rice")
+    temp = data.get("temperature", 0)
+    hum = data.get("humidity", 0)
+    rain = data.get("rainfall", 0)
+    ph = data.get("ph", 0)
+    N = data.get("N", 0)
+    P = data.get("P", 0)
+    K = data.get("K", 0)
+    soil = data.get("soil_type", "")
+    month = data.get("month", 0)
+    season = get_season_from_month(month)
 
-        if data["rainfall"] > 150:
-            positive.append("sufficient rainfall for rice")
-        else:
-            negative.append("insufficient rainfall for rice")
-
-    # 🌽 Maize logic
-    elif crop == "maize":
-        if data["temperature"] > 28:
-            positive.append("warm temperature for maize")
-        else:
-            negative.append("temperature too low for maize")
-
-        if data["rainfall"] < 100:
-            positive.append("low rainfall suits maize")
-        else:
-            negative.append("excess rainfall for maize")
-
-    # 🧵 Cotton logic
-    elif crop == "cotton":
-        if data["potassium"] > 150:
-            positive.append("high potassium supports cotton")
-        else:
-            negative.append("low potassium for cotton")
-
-        if data["ph"] < 6:
-            positive.append("slightly acidic soil suits cotton")
-        else:
-            negative.append("pH not ideal for cotton")
-
-    # 🌾 Wheat logic
-    elif crop == "wheat":
-        if data["ph"] > 7:
-            positive.append("alkaline soil suits wheat")
-        else:
-            negative.append("pH too low for wheat")
-
-    # 🌿 Default fallback
+    # Weather
+    if rule["temp"][0] <= temp <= rule["temp"][1]:
+        positive.append(f"Temperature ({temp}°C) is ideal")
     else:
-        if data["nitrogen"] > 50:
-            positive.append("moderate nitrogen level")
-        else:
-            negative.append("low nitrogen")
+        negative.append(f"Temperature ({temp}°C) is outside ideal range")
+
+    if rule["humidity"][0] <= hum <= rule["humidity"][1]:
+        positive.append(f"Humidity ({hum}%) is ideal")
+    else:
+        negative.append(f"Humidity ({hum}%) is outside ideal range")
+
+    if rule["rainfall"][0] <= rain <= rule["rainfall"][1]:
+        positive.append(f"Rainfall ({rain}mm) is ideal")
+    else:
+        negative.append(f"Rainfall ({rain}mm) is not ideal")
+
+    # Soil Chemistry
+    if rule["ph"][0] <= ph <= rule["ph"][1]:
+        positive.append(f"Soil pH ({ph}) is ideal")
+    else:
+        negative.append(f"Soil pH ({ph}) is not ideal")
+
+    if rule["N"][0] <= N <= rule["N"][1]:
+        positive.append(f"Nitrogen level ({N}) is excellent")
+    if rule["P"][0] <= P <= rule["P"][1]:
+        positive.append(f"Phosphorus level ({P}) is excellent")
+    if rule["K"][0] <= K <= rule["K"][1]:
+        positive.append(f"Potassium level ({K}) is excellent")
+
+    # Ecology
+    if soil in rule["soil"]:
+        positive.append(f"{soil.title()} soil is perfect for {crop}")
+    else:
+        negative.append(f"{soil.title()} soil is not usually recommended")
+
+    if season in rule["season"]:
+        positive.append(f"Month {month} ({season.title()}) is the correct growing season")
+    else:
+        negative.append(f"Month {month} ({season.title()}) is out of season for {crop}")
 
     return {
         "positive": positive,
         "negative": negative
     }
 
-# 🔹 Decision Score function (NEW)
+
+# -----------------------------
+# DECISION SCORE
+# -----------------------------
+
 def get_decision_score(confidence):
-    if confidence > 0.6:
+    if confidence >= 0.70:
         return "Highly Recommended"
-    elif confidence > 0.4:
+    elif confidence >= 0.40:
         return "Recommended"
     else:
         return "Try with caution"
 
 
-# 🔹 Main Prediction Service (UPGRADED)
-def predict_crop_service(data):
-    features = np.array([[ 
-        data["nitrogen"],
-        data["phosphorus"],
-        data["potassium"],
-        data["temperature"],
-        data["humidity"],
-        data["ph"],
-        data["rainfall"]
-    ]])
+# -----------------------------
+# MAIN PREDICTION SERVICE
+# -----------------------------
 
-    # 🔹 Get probabilities
+def predict_crop_service(features, raw_data):
+    """
+    features: scaled numpy/dataframe from feature_service.build_features()
+    raw_data: original input dictionary containing unscaled feature values
+    Returns top 3 crop recommendations with confidence and score.
+    """
+
+    # Get raw class probabilities from Random Forest
     probabilities = model.predict_proba(features)[0]
-    
-    #Normalize probabilities
-    total =sum(probabilities)
-    probabilities = [p/total for p in probabilities]
 
-    # 🔥 Relative scaling (make best crop close to 1.0)
-    max_prob = max(probabilities)
+    # Normalize raw probabilities just in case
+    total = sum(probabilities)
+    if total > 0:
+        raw_probs = np.array([p / total for p in probabilities])
+    else:
+        raw_probs = np.array(probabilities)
 
-    adjusted_probs = [
-        (p / max_prob) if max_prob > 0 else 0
-        for p in probabilities
-    ]
+    # Smooth the probabilities using Laplace smoothing style logic
+    # Why? The synthetic dataset generates perfectly separable classes, making
+    # Random Forest overconfident (exactly 1.0 and 0.0 scores).
+    # This smoothing blends 80% model confidence with 20% baseline uniform 
+    # probability to provide realistic numbers mimicking real-world uncertainty.
+    num_classes = len(raw_probs)
+    smoothed_probs = (0.80 * raw_probs) + (0.20 * (1.0 / num_classes))
 
-    classes = model.classes_
+    # Decode class indices → crop name strings using label encoder
+    classes = label_encoder.inverse_transform(model.classes_)
 
-    # 🔹 Top 3 crops
-    top_indices = np.argsort(adjusted_probs)[-3:][::-1]
+    # Pick top 3
+    top_indices = np.argsort(smoothed_probs)[-3:][::-1]
 
     top_crops = []
 
     for idx in top_indices:
         crop_name = classes[idx]
-        base_confidence = float(adjusted_probs[idx])
+        base_confidence = float(smoothed_probs[idx])
 
-        explanation = generate_explanation(data, crop_name)
+        # Generate rule-based explanations for this crop using the exact rules from generation
+        explanation = generate_explanation(raw_data, crop_name)
 
-        # Count factors
-        positive = len(explanation["positive"])
-        negative = len(explanation["negative"])
+        # Count positive and negative factors
+        positive_count = len(explanation["positive"])
+        negative_count = len(explanation["negative"])
 
-        # Adjust confidence using explanation
-        confidence = base_confidence + (positive * 0.05) - (negative * 0.05)
+        # Fine-tune confidence score using explanation rules (+0.04 per positive, -0.04 per negative)
+        confidence = base_confidence + (positive_count * 0.04) - (negative_count * 0.04)
 
-        # Clamp between 0 and 1
-        confidence = max(0, min(confidence, 1))
+        # Clamp safely between 0 and 1
+        confidence = max(0.01, min(confidence, 0.99))
         confidence = round(confidence, 2)
 
         top_crops.append({
