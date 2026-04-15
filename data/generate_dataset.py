@@ -80,12 +80,12 @@ def get_season(month):
 # SCORING FUNCTION (CORE LOGIC)
 # -----------------------------
 
-# 🚀 STEP 2: Empowering the Logic - now checking all 9 properties
+# STEP 2: Empowering the Logic - now checking all 9 properties
 def score_crop(crop, features):
     rule = CROP_RULES[crop]
     score = 0
     
-    # 🌡️ Weather (1 pt each)
+    # Weather (1 pt each)
     if rule["temp"][0] <= features["temperature"] <= rule["temp"][1]:
         score += 1
     if rule["humidity"][0] <= features["humidity"] <= rule["humidity"][1]:
@@ -93,7 +93,7 @@ def score_crop(crop, features):
     if rule["rainfall"][0] <= features["rainfall"] <= rule["rainfall"][1]:
         score += 1
     
-    # 🧪 Soil Science (1 pt each)
+    # Soil Science (1 pt each)
     if rule["ph"][0] <= features["ph"] <= rule["ph"][1]:
         score += 1
     if rule["N"][0] <= features["N"] <= rule["N"][1]:
@@ -103,11 +103,11 @@ def score_crop(crop, features):
     if rule["K"][0] <= features["K"] <= rule["K"][1]:
         score += 1
 
-    # 🌍 Ecology (Soil Type: 1 pt)
+    # Ecology (Soil Type: 1 pt)
     if features.get("soil_type") in rule["soil"]:
         score += 1
 
-    # ⏳ Seasonality (Massive 2 point weight, because breaking seasonal trends usually causes massive drops in yield!)
+    # Seasonality (Massive 2 point weight, because breaking seasonal trends usually causes massive drops in yield!)
     if features.get("season") in rule["season"]:
         score += 2
 
@@ -169,7 +169,7 @@ def generate_sample():
 def generate_dataset(n=NUM_SAMPLES):
     data = []
     
-    print("🌾 Generating smart agronomy dataset...")
+    print("Generating smart agronomy dataset...")
     for _ in tqdm(range(n)):
         data.append(generate_sample())
     
@@ -186,5 +186,5 @@ if __name__ == "__main__":
 
     df.to_csv(OUTPUT_PATH, index=False)
 
-    print(f"✅ Dataset generated: {OUTPUT_PATH}")
+    print(f"Dataset generated: {OUTPUT_PATH}")
     print(df.head())

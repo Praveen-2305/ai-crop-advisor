@@ -21,7 +21,7 @@ MODEL_PATH = os.path.join(BASE_DIR, "models/crop_model.pkl")
 # -----------------------------
 # LOAD DATA
 # -----------------------------
-print("📥 Loading dataset...")
+print("Loading dataset...")
 df = pd.read_csv(DATA_PATH)
 
 print("Dataset shape:", df.shape)
@@ -32,7 +32,7 @@ print(df.head())
 # -----------------------------
 
 # Encode categorical features
-print("\n🔧 Encoding categorical features...")
+print("\nEncoding categorical features...")
 
 le_soil = LabelEncoder()
 le_season = LabelEncoder()
@@ -59,7 +59,7 @@ y = df["label"]
 # -----------------------------
 # SCALING (IMPORTANT)
 # -----------------------------
-print("\n⚖️ Scaling features...")
+print("\nScaling features...")
 
 scaler = StandardScaler()
 X_scaled = scaler.fit_transform(X)
@@ -78,7 +78,7 @@ X_train, X_test, y_train, y_test = train_test_split(
 # -----------------------------
 # MODEL TRAINING
 # -----------------------------
-print("\n🤖 Training model...")
+print("\nTraining model...")
 
 model = RandomForestClassifier(
     n_estimators=200,
@@ -91,7 +91,7 @@ model.fit(X_train, y_train)
 # -----------------------------
 # EVALUATION
 # -----------------------------
-print("\n📊 Evaluating model...")
+print("\nEvaluating model...")
 
 y_pred = model.predict(X_test)
 
@@ -104,10 +104,10 @@ print(classification_report(y_test, y_pred))
 # -----------------------------
 # SAVE MODEL
 # -----------------------------
-print("\n💾 Saving model...")
+print("\nSaving model...")
 
 joblib.dump(model, MODEL_PATH)
 
-print(f"✅ Model saved at: {MODEL_PATH}")
-print(f"✅ Scaler saved at: {SCALER_PATH}")
-print(f"✅ Encoders saved at: {ENCODER_PATH}")
+print(f"Model saved at: {MODEL_PATH}")
+print(f"Scaler saved at: {SCALER_PATH}")
+print(f"Encoders saved at: {ENCODER_PATH}")

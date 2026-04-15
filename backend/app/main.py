@@ -7,4 +7,4 @@ app.include_router(crop_router)
 
 @app.get("/")
 def home():
-    return {"message": "AI Crop Advisor Running 🚀"}
+    return {"message": "AI Crop Advisor Running"}
